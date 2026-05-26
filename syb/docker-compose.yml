@@ -35,8 +35,16 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
+      # Main router — frontend pages, lower priority so the API router wins for /api/*
       - "traefik.http.routers.librecrawl.rule=Host(`crawl.sybserver.com`)"
       - "traefik.http.routers.librecrawl.entrypoints=web"
+      - "traefik.http.routers.librecrawl.priority=1"
+      - "traefik.http.routers.librecrawl.service=librecrawl"
+      # API router — explicit priority overrides the global traefik-api catchall at PathPrefix(`/api`)
+      - "traefik.http.routers.librecrawl-api.rule=Host(`crawl.sybserver.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.librecrawl-api.entrypoints=web"
+      - "traefik.http.routers.librecrawl-api.priority=100"
+      - "traefik.http.routers.librecrawl-api.service=librecrawl"
       - "traefik.http.services.librecrawl.loadbalancer.server.port=5000"
     command: >
       sh -c "
