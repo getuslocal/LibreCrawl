@@ -719,6 +719,11 @@ def start_crawl():
     if not url:
         return jsonify({'success': False, 'error': 'URL is required'})
 
+    # Ensure session_id exists before reading it — otherwise crawl persistence
+    # silently no-ops because crawler.start_crawl gates DB writes on truthy session_id.
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+
     user_id = session.get('user_id')
     session_id = session.get('session_id')
     tier = session.get('tier', 'guest')
