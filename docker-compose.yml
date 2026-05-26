@@ -1,32 +1,40 @@
+# SYB-customized for netcup deployment behind Cloudflared + Traefik.
+# Diverges from upstream in: ports removed, volume → named, env defaults flipped
+# for production mode, traefik network + labels added.
+#
+# NOTE: docker-compose.override.example.yml in this repo is REFERENCE ONLY —
+# Portainer Git stacks do not auto-merge override files. All real config lives here.
+
 services:
   librecrawl:
     build: .
     container_name: librecrawl
     volumes:
-      # Persist the user database and settings
-      - ./data:/app/data
+      - librecrawl_data:/app/data
     environment:
       - FLASK_APP=main.py
       - PYTHONUNBUFFERED=1
-      # Set to "true" for local mode (no authentication), "false" for production
-      - LOCAL_MODE=${LOCAL_MODE:-true}
-      # Set to "true" to disable new user registrations
+      - LOCAL_MODE=${LOCAL_MODE:-false}
       - REGISTRATION_DISABLED=${REGISTRATION_DISABLED:-false}
-      # Set to "true" for demo mode (1.5GB per-user memory limit)
       - DEMO_MODE=${DEMO_MODE:-false}
-      # DANGEROUS: Set to "true" to allow login as any username with no password
-      # (username only used to separate sessions). Do NOT use in production.
       - DANGEROUSLY_SKIP_AUTH=${DANGEROUSLY_SKIP_AUTH:-false}
-      # Uncomment these for SMTP sending
+      # SMTP (uncomment to enable email verification):
       # - SMTP_HOST=${SMTP_HOST}
       # - SMTP_PORT=${SMTP_PORT}
       # - SMTP_USER=${SMTP_USER}
       # - SMTP_PASSWORD=${SMTP_PASSWORD}
       # - SMTP_FROM=${SMTP_FROM}
       # - SMTP_FROM_NAME=${SMTP_FROM_NAME}
-      # Add this for correct links in the verification emails
       # - MAIN_APP_URL=${MAIN_APP_URL}
     restart: unless-stopped
+    shm_size: '2gb'
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.librecrawl.rule=Host(`crawl.sybserver.com`)"
+      - "traefik.http.routers.librecrawl.entrypoints=web"
+      - "traefik.http.services.librecrawl.loadbalancer.server.port=5000"
     command: >
       sh -c "
       FLAGS='';
@@ -44,5 +52,9 @@ services:
       fi;
       python main.py $$FLAGS"
 
-    # Increase shared memory size for Chrome to prevent crashes
-    shm_size: '2gb'
+volumes:
+  librecrawl_data:
+
+networks:
+  traefik:
+    external: true
