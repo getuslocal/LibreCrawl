@@ -1,0 +1,63 @@
+# SYB canonical compose for LibreCrawl on netcup.
+# Lives in syb/ so upstream docker-compose.yml stays pristine — "Sync fork"
+# never conflicts. Portainer stack "Compose path" = syb/docker-compose.yml.
+#
+# pull_policy: build forces Portainer to rebuild on redeploy after "Sync fork"
+# instead of reusing cached image (Docker standalone default).
+
+services:
+  librecrawl:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    pull_policy: build
+    container_name: librecrawl
+    volumes:
+      - librecrawl_data:/app/data
+    environment:
+      - FLASK_APP=main.py
+      - PYTHONUNBUFFERED=1
+      - LOCAL_MODE=${LOCAL_MODE:-false}
+      - REGISTRATION_DISABLED=${REGISTRATION_DISABLED:-false}
+      - DEMO_MODE=${DEMO_MODE:-false}
+      - DANGEROUSLY_SKIP_AUTH=${DANGEROUSLY_SKIP_AUTH:-false}
+      # SMTP (uncomment to enable email verification):
+      # - SMTP_HOST=${SMTP_HOST}
+      # - SMTP_PORT=${SMTP_PORT}
+      # - SMTP_USER=${SMTP_USER}
+      # - SMTP_PASSWORD=${SMTP_PASSWORD}
+      # - SMTP_FROM=${SMTP_FROM}
+      # - SMTP_FROM_NAME=${SMTP_FROM_NAME}
+      # - MAIN_APP_URL=${MAIN_APP_URL}
+    restart: unless-stopped
+    shm_size: '2gb'
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.librecrawl.rule=Host(`crawl.sybserver.com`)"
+      - "traefik.http.routers.librecrawl.entrypoints=web"
+      - "traefik.http.services.librecrawl.loadbalancer.server.port=5000"
+    command: >
+      sh -c "
+      FLAGS='';
+      if [ \"$$LOCAL_MODE\" = \"true\" ]; then
+        FLAGS=\"$$FLAGS --local\";
+      fi;
+      if [ \"$$REGISTRATION_DISABLED\" = \"true\" ]; then
+        FLAGS=\"$$FLAGS --disable-register\";
+      fi;
+      if [ \"$$DEMO_MODE\" = \"true\" ]; then
+        FLAGS=\"$$FLAGS --demo\";
+      fi;
+      if [ \"$$DANGEROUSLY_SKIP_AUTH\" = \"true\" ]; then
+        FLAGS=\"$$FLAGS --dangerously-skip-auth\";
+      fi;
+      python main.py $$FLAGS"
+
+volumes:
+  librecrawl_data:
+
+networks:
+  traefik:
+    external: true
