@@ -1,5 +1,6 @@
 # SYB customization — adds Traefik routing for netcup deployment.
-# Upstream docker-compose.yml is left untouched so `git pull upstream main` stays conflict-free.
+# Upstream docker-compose.yml ports block removed (we don't bind host ports
+# behind Cloudflared+Traefik). Traefik routes via the `traefik` Docker network.
 
 services:
   librecrawl:
@@ -18,7 +19,6 @@ services:
       - "traefik.http.routers.librecrawl.rule=Host(`crawl.sybserver.com`)"
       - "traefik.http.routers.librecrawl.entrypoints=web"
       - "traefik.http.services.librecrawl.loadbalancer.server.port=5000"
-    ports: !reset []
 
 networks:
   traefik:
