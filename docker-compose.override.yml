@@ -1,12 +1,14 @@
 # SYB customization — adds Traefik routing for netcup deployment.
 # Upstream docker-compose.yml ports block removed (we don't bind host ports
 # behind Cloudflared+Traefik). Traefik routes via the `traefik` Docker network.
+# Data persisted via named Docker volume to avoid host bind-mount UID issues
+# (container runs as UID 1000:1000).
 
 services:
   librecrawl:
     container_name: librecrawl
     volumes:
-      - /root/apps/librecrawl/data:/app/data
+      - librecrawl_data:/app/data
     environment:
       - LOCAL_MODE=false
       - REGISTRATION_DISABLED=false
@@ -19,6 +21,9 @@ services:
       - "traefik.http.routers.librecrawl.rule=Host(`crawl.sybserver.com`)"
       - "traefik.http.routers.librecrawl.entrypoints=web"
       - "traefik.http.services.librecrawl.loadbalancer.server.port=5000"
+
+volumes:
+  librecrawl_data:
 
 networks:
   traefik:
