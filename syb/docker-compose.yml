@@ -17,6 +17,8 @@ services:
     environment:
       - FLASK_APP=main.py
       - PYTHONUNBUFFERED=1
+      # Set actual value in Portainer stack env (never commit a real secret here):
+      - SECRET_KEY=${SECRET_KEY}
       - LOCAL_MODE=${LOCAL_MODE:-false}
       - REGISTRATION_DISABLED=${REGISTRATION_DISABLED:-false}
       - DEMO_MODE=${DEMO_MODE:-false}
