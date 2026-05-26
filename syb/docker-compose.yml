@@ -13,7 +13,7 @@ services:
     pull_policy: build
     container_name: librecrawl
     volumes:
-      - librecrawl_data:/app/data
+      - /root/apps/librecrawl/data:/app/data
     environment:
       - FLASK_APP=main.py
       - PYTHONUNBUFFERED=1
@@ -63,8 +63,6 @@ services:
       fi;
       python main.py $$FLAGS"
 
-volumes:
-  librecrawl_data:
 
 networks:
   traefik:
