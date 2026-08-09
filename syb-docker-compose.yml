@@ -1,37 +1,39 @@
+# SYB canonical compose for LibreCrawl on netcup — ROOT copy for Arcane.
+# Root placement so build context = . (repo root, next to Dockerfile) and Arcane syncs all files.
 services:
   librecrawl:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    pull_policy: build
     container_name: librecrawl
-    ports:
-      # In local mode: only localhost (127.0.0.1:5000)
-      # In production mode: all interfaces (0.0.0.0:5000) for LAN/WAN access
-      - "${HOST_BINDING:-127.0.0.1}:5000:5000"
     volumes:
-      # Persist the user database and settings
-      - ./data:/app/data
+      - /root/apps/librecrawl/data:/app/data
     environment:
       - FLASK_APP=main.py
       - PYTHONUNBUFFERED=1
-      # Set to "true" for local mode (no authentication), "false" for production
-      - LOCAL_MODE=${LOCAL_MODE:-true}
-      # Set to "true" to disable new user registrations
+      - SECRET_KEY=${SECRET_KEY}
+      - LOCAL_MODE=${LOCAL_MODE:-false}
       - REGISTRATION_DISABLED=${REGISTRATION_DISABLED:-false}
-      # Set to "true" for demo mode (1.5GB per-user memory limit)
       - DEMO_MODE=${DEMO_MODE:-false}
-      # DANGEROUS: Set to "true" to allow login as any username with no password
-      # (username only used to separate sessions). Do NOT use in production.
       - DANGEROUSLY_SKIP_AUTH=${DANGEROUSLY_SKIP_AUTH:-false}
-      # Uncomment these for SMTP sending
-      # - SMTP_HOST=${SMTP_HOST}
-      # - SMTP_PORT=${SMTP_PORT}
-      # - SMTP_USER=${SMTP_USER}
-      # - SMTP_PASSWORD=${SMTP_PASSWORD}
-      # - SMTP_FROM=${SMTP_FROM}
-      # - SMTP_FROM_NAME=${SMTP_FROM_NAME}
-      # Add this for correct links in the verification emails
-      # - MAIN_APP_URL=${MAIN_APP_URL}
     restart: unless-stopped
-    command:  command: python main.py --disable-register
-
-    # Increase shared memory size for Chrome to prevent crashes
     shm_size: '2gb'
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.librecrawl.rule=Host(`crawl.sybserver.com`)"
+      - "traefik.http.routers.librecrawl.entrypoints=web"
+      - "traefik.http.routers.librecrawl.priority=1"
+      - "traefik.http.routers.librecrawl.service=librecrawl"
+      - "traefik.http.routers.librecrawl-api.rule=Host(`crawl.sybserver.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.librecrawl-api.entrypoints=web"
+      - "traefik.http.routers.librecrawl-api.priority=100"
+      - "traefik.http.routers.librecrawl-api.service=librecrawl"
+      - "traefik.http.services.librecrawl.loadbalancer.server.port=5000"
+    command: python main.py --disable-register
+
+networks:
+  traefik:
+    external: true
