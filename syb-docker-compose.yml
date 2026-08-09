@@ -35,4 +35,3 @@ services:
 
     # Increase shared memory size for Chrome to prevent crashes
     shm_size: '2gb'
-\r
