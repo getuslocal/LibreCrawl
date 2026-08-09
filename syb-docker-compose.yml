@@ -32,7 +32,7 @@ services:
       - "traefik.http.routers.librecrawl-api.priority=100"
       - "traefik.http.routers.librecrawl-api.service=librecrawl"
       - "traefik.http.services.librecrawl.loadbalancer.server.port=5000"
-    command: python main.py --disable-register
+    command: python main.py
 
 networks:
   traefik:
